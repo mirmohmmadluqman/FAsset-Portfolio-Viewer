@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAsset Portfolio Viewer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vanilla-tilt@1.7.0/dist/vanilla-tilt.min.js"></script>
+</head>
+<body>
+  <div class="container" data-tilt>
+    <h1>FAsset Portfolio Viewer</h1>
+    <div class="intro-text">Check your FAssets balances like FXRP, USDT0, and C2FLR directly with MetaMask</div>
+
+    <div class="button-section">
+      <button id="connectButton" class="cyber-btn">Connect <i class="fa fa-plug"></i></button>
+      <button id="disconnectButton" class="cyber-btn" style="display: none;">Disconnect <i class="fa fa-power-off"></i></button>
+    </div>
+
+    <h2>Your Balances</h2>
+    <div class="balances">
+      <p>C2FLR: <span id="flrBalance">0</span></p>
+      <p>FXRP: <span id="fxrpBalance">0</span></p>
+      <p>USDT0: <span id="usdt0Balance">0</span></p>
+    </div>
+
+    <h2>Send Fake Fund</h2>
+    <label for="ethAmount">ETH Amount to Fund</label>
+    <input placeholder="ETH > 0.1" id="ethAmount" type="number" step="0.01" min="0.1"/>
+    <div class="button-section">
+      <button id="fundButton" class="cyber-btn fund-btn">Fund <i class="fa fa-coffee"></i></button>
+    </div>
+  </div>
+
+  <div class="contact-section">
+    <div class="social-buttons">
+      <a href="mailto:mirmohmmadluqman@gmail.com" class="social-btn email"><i class="fa fa-envelope"></i> mirmohmmadluqman@gmail.com</a>
+      <a href="https://twitter.com/mirmohmadluqman" target="_blank" class="social-btn twitter"><i class="fa fa-twitter"></i> @mirmohmadluqman</a>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createPublicClient, http, defineChain, createWalletClient, custom, formatUnits } from 'https://esm.sh/viem';
+    import { formatEther } from 'https://esm.sh/ethers';
+
+    // Define Coston2 testnet
+    const coston2 = defineChain({
+      id: 114,
+      name: 'Flare Testnet Coston2',
+      network: 'coston2',
+      nativeCurrency: {
+        decimals: 18,
+        name: 'Coston2 Flare',
+        symbol: 'C2FLR',
+      },
+      rpcUrls: {
+        default: {
+          http: ['https://coston2-api.flare.network/ext/C/rpc'],
+        },
+      },
+      blockExplorers: {
+        default: { name: 'Coston2 Explorer', url: 'https://coston2-explorer.flare.network' },
+      },
+    });
+
+    const publicClient = createPublicClient({
+      chain: coston2,
+      transport: http(),
+    });
+
+    const erc20Abi = [
+      {
+        constant: true,
+        inputs: [{ name: '_owner', type: 'address' }],
+        name: 'balanceOf',
+        outputs: [{ name: 'balance', type: 'uint256' }],
+        type: 'function',
+      },
+      {
+        constant: true,
+        inputs: [],
+        name: 'decimals',
+        outputs: [{ name: '', type: 'uint8' }],
+        type: 'function',
+      },
+    ];
+
+    // Placeholder addresses - replace with actual contract addresses
+    const FXRP_ADDRESS = '0x0000000000000000000000000000000000000000';
+    const USDT0_ADDRESS = '0x0000000000000000000000000000000000000000';
+
+    let account = null;
+
+    const connectButton = document.getElementById('connectButton');
+    const disconnectButton = document.getElementById('disconnectButton');
+    const fundButton = document.getElementById('fundButton');
+    const ethAmountInput = document.getElementById('ethAmount');
+    const flrBalanceElement = document.getElementById('flrBalance');
+    const fxrpBalanceElement = document.getElementById('fxrpBalance');
+    const usdt0BalanceElement = document.getElementById('usdt0Balance');
+
+    async function connectWallet() {
+      try {
+        if (!window.ethereum) {
+          alert('Please install MetaMask!');
+          return;
+        }
+
+        const walletClient = createWalletClient({ transport: custom(window.ethereum) });
+        const accounts = await walletClient.request({ method: 'eth_requestAccounts' });
+        account = accounts[0];
+        connectButton.style.display = 'none';
+        disconnectButton.style.display = 'inline-flex';
+        connectButton.innerHTML = 'Connect <i class="fa fa-plug"></i>';
+        await fetchBalances();
+      } catch (error) {
+        console.error('Connection error:', error);
+        alert('Failed to connect wallet');
+      }
+    }
+
+    async function disconnectWallet() {
+      account = null;
+      connectButton.style.display = 'inline-flex';
+      disconnectButton.style.display = 'none';
+      flrBalanceElement.textContent = '0';
+      fxrpBalanceElement.textContent = '0';
+      usdt0BalanceElement.textContent = '0';
+    }
+
+    async function fetchBalances() {
+      if (!account) return;
+
+      try {
+        // Fetch C2FLR balance
+        const c2flrBalance = await publicClient.getBalance({ address: account });
+        flrBalanceElement.textContent = parseFloat(formatEther(c2flrBalance)).toFixed(4);
+
+        // Fetch FXRP balance
+        const fxrpDecimals = await publicClient.readContract({
+          address: FXRP_ADDRESS,
+          abi: erc20Abi,
+          functionName: 'decimals',
+        });
+        const fxrpBalance = await publicClient.readContract({
+          address: FXRP_ADDRESS,
+          abi: erc20Abi,
+          functionName: 'balanceOf',
+          args: [account],
+        });
+        fxrpBalanceElement.textContent = parseFloat(formatUnits(fxrpBalance, fxrpDecimals)).toFixed(4);
+
+        // Fetch USDT0 balance
+        const usdt0Decimals = await publicClient.readContract({
+          address: USDT0_ADDRESS,
+          abi: erc20Abi,
+          functionName: 'decimals',
+        });
+        const usdt0Balance = await publicClient.readContract({
+          address: USDT0_ADDRESS,
+          abi: erc20Abi,
+          functionName: 'balanceOf',
+          args: [account],
+        });
+        usdt0BalanceElement.textContent = parseFloat(formatUnits(usdt0Balance, usdt0Decimals)).toFixed(4);
+      } catch (error) {
+        console.error('Error fetching balances:', error);
+        alert('Error fetching balances. Check console for details.');
+      }
+    }
+
+    connectButton.addEventListener('click', connectWallet);
+    disconnectButton.addEventListener('click', disconnectWallet);
+
+    fundButton.addEventListener('click', () => {
+      const amount = ethAmountInput.value;
+      if (amount && parseFloat(amount) >= 0.1) {
+        console.log(`Fake sending ${amount} ETH`);
+        alert(`Fake transaction: Sent ${amount} ETH`);
+        ethAmountInput.value = '';
+      } else {
+        alert('Please enter an amount >= 0.1 ETH');
+      }
+    });
+
+    // Initialize tilt animation
+    VanillaTilt.init(document.querySelector('.container'), {
+      max: 15,
+      speed: 400,
+      glare: true,
+      'max-glare': 0.2,
+    });
+  </script>
+</body>
+</html>

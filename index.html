@@ -22,10 +22,17 @@
   </div>
   <h2>Your Balances</h2>
   <div class="balances">
+    
     <p>C2FLR: <span id="flrBalance">0</span></p>
     <p>FXRP: <span id="fxrpBalance">0</span></p>
     <p>USDT0: <span id="usdt0Balance">0</span></p>
   </div>
+  =
+<div class="button-section">
+  <a href="./src/" class="cyber-btn" target="_blank" style="margin: 0 auto; display: inline-flex;">
+    <i class="fa fa-arrow-right"></i> Advanced Dashboard
+  </a>
+</div>
   <h2>Simulate Fund</h2>
   <label for="ethAmount">ETH Amount to Fund</label>
   <input placeholder="ETH > 0.1" id="ethAmount" type="number" step="0.01" min="0.1"/>
@@ -112,7 +119,7 @@
       connectButton.style.display = 'none';
       disconnectButton.style.display = 'inline-flex';
       connectButton.innerHTML = 'Connect <i class="fa fa-plug"></i>';
-      await fetchBalances();
+      await fetch();
     } catch (error) {
       if (error.code === 4902) {
         // Add chain if not exists
@@ -201,4 +208,5 @@
 </script>
 </body>
 </html>
+
 

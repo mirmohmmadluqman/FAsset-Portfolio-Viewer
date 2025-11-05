@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAsset Portfolio Viewer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+  <link rel="icon" href="https://dev.flare.network/img/flare_icon.svg" type="image/x-icon">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    :root {
+      --primary-color: #e91e63;
+      --secondary-color: #f8f9fa;
+      --bg-color: #ffffff;
+      --text-color: #2c3e50;
+      --text-muted: #6c757d;
+      --border-color: #e9ecef;
+      --shadow-color: rgba(0, 0, 0, 0.1);
+      --success-color: #28a745;
+      --warning-color: #ffc107;
+      --danger-color: #dc3545;
+    }
+    [data-theme="dark"] {
+      --primary-color: #e91e63;
+      --secondary-color: #1a1a1a;
+      --bg-color: #2d2d2d;
+      --text-color: #e0e0e0;
+      --text-muted: #9e9e9e;
+      --border-color: #404040;
+      --shadow-color: rgba(0, 0, 0, 0.3);
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--secondary-color);
+      color: var(--text-color);
+      min-height: 100vh;
+      line-height: 1.6;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 2rem;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    h1 {
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      font-weight: 700;
+      color: var(--text-color);
+    }
+    .theme-toggle {
+      background: var(--bg-color);
+      border: 2px solid var(--border-color);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      color: var(--text-color);
+    }
+    .theme-toggle:hover {
+      border-color: var(--primary-color);
+      transform: translateY(-2px);
+    }
+    .alert {
+      background: var(--warning-color);
+      color: #000;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .card {
+      background: var(--bg-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 10px var(--shadow-color);
+      border: 1px solid var(--border-color);
+      transition: all 0.3s ease;
+    }
+    .card:hover {
+      box-shadow: 0 4px 20px var(--shadow-color);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border-color);
+    }
+    .card-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--text-color);
+    }
+    .btn {
+      padding: 0.7rem 1.5rem;
+      background: var(--primary-color);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+    .btn:hover:not(:disabled) {
+      background: #d81b60;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(233, 30, 99, 0.4);
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: var(--text-muted);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: #5a6268;
+    }
+    .btn-success {
+      background: var(--success-color);
+    }
+    .btn-success:hover:not(:disabled) {
+      background: #218838;
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      margin-bottom: 1.5rem;
+    }
+    .balance-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .balance-item {
+      background: var(--secondary-color);
+      padding: 1.2rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .balance-label {
+      font-weight: 500;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    .balance-value {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--text-color);
+    }
+    input, select {
+      width: 100%;
+      padding: 0.8rem;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 1rem;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-color);
+      color: var(--text-color);
+      transition: all 0.3s ease;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.1);
+    }
+    .qr-container {
+      text-align: center;
+      padding: 1rem;
+    }
+    #qrcode {
+      display: inline-block;
+      padding: 1rem;
+      background: #fff;
+      border-radius: 8px;
+    }
+    .transaction-item {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .transaction-item:last-child {
+      border-bottom: none;
+    }
+    .tx-status {
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .tx-success {
+      background: rgba(40, 167, 69, 0.2);
+      color: var(--success-color);
+    }
+    .chart-container {
+      position: relative;
+      height: 300px;
+      margin-top: 1rem;
+    }
+    .footer {
+      text-align: center;
+      padding: 2rem;
+      margin-top: 3rem;
+      border-top: 1px solid var(--border-color);
+    }
+    .social-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+    .social-links a {
+      color: var(--text-color);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+    .social-links a:hover {
+      color: var(--primary-color);
+    }
+    .network-badge {
+      display: inline-block;
+      padding: 0.4rem 0.8rem;
+      background: var(--success-color);
+      color: #fff;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(233, 30, 99, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--primary-color);
+      animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .explorer-link {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .explorer-link:hover {
+      text-decoration: underline;
+    }
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+      }
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .balance-grid {
+        grid-template-columns: 1fr;
+      }
+      .btn-group {
+        flex-direction: column;
+      }
+      .btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>FAsset Portfolio Viewer</h1>
+        <p style="color: var(--text-muted); margin-top: 0.5rem;">Track your Flare testnet assets</p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+        <i class="fa fa-moon-o"></i> Theme
+      </button>
+    </div>
+    <div class="alert" role="alert">
+      <i class="fa fa-info-circle"></i>
+      <span><strong>Testnet Only:</strong> This app connects to Flare Coston2 testnet. No real funds are at risk. Private keys never leave your wallet.</span>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Wallet Connection</h2>
+        <span id="networkBadge"></span>
+      </div>
+      <div class="btn-group">
+        <button class="btn" id="connectBtn">
+          <i class="fa fa-plug"></i> Connect MetaMask
+        </button>
+        <button class="btn btn-secondary" id="disconnectBtn" style="display: none;">
+          <i class="fa fa-power-off"></i> Disconnect
+        </button>
+        <button class="btn btn-success" id="refreshBtn" style="display: none;">
+          <i class="fa fa-refresh"></i> Refresh Balances
+        </button>
+      </div>
+      <div id="walletAddress" style="display: none; margin-top: 1rem;">
+        <strong>Connected:</strong> <span id="addressText"></span>
+        <a href="#" id="explorerLink" class="explorer-link" target="_blank" style="margin-left: 1rem;">
+          <i class="fa fa-external-link"></i> View on Explorer
+        </a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Your Balances</h2>
+        <div id="loadingIndicator" style="display: none;">
+          <span class="loading"></span>
+        </div>
+      </div>
+      <div class="balance-grid" id="balanceGrid">
+        <div class="balance-item">
+          <span class="balance-label">C2FLR</span>
+          <span class="balance-value" id="c2flrBalance">0.0000</span>
+        </div>
+        <div class="balance-item">
+          <span class="balance-label">FXRP</span>
+          <span class="balance-value" id="fxrpBalance">0.0000</span>
+        </div>
+        <div class="balance-item">
+          <span class="balance-label">USDT0</span>
+          <span class="balance-value" id="usdt0Balance">0.0000</span>
+        </div>
+      </div>
+      <div id="customTokens"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Portfolio Analytics</h2>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+        <div class="balance-item">
+          <span class="balance-label">Total Value (C2FLR)</span>
+          <span class="balance-value" id="totalValue">0.0000</span>
+        </div>
+        <div class="balance-item">
+          <span class="balance-label">Estimated USD</span>
+          <span class="balance-value" id="totalUSD">$0.00</span>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="portfolioChart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Add Custom Token</h2>
+      </div>
+      <div class="form-group">
+        <label for="tokenAddress">Token Contract Address</label>
+        <input type="text" id="tokenAddress" placeholder="0x..." pattern="^0x[a-fA-F0-9]{40}$">
+      </div>
+      <div class="form-group">
+        <label for="tokenSymbol">Token Symbol</label>
+        <input type="text" id="tokenSymbol" placeholder="e.g., FBTC" maxlength="10">
+      </div>
+      <button class="btn" id="addTokenBtn">
+        <i class="fa fa-plus"></i> Add Token
+      </button>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Transaction History</h2>
+      </div>
+      <div id="txHistory">
+        <p style="text-align: center; color: var(--text-muted); padding: 2rem;">No transactions yet</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Share Wallet Address</h2>
+      </div>
+      <div class="qr-container">
+        <div id="qrcode"></div>
+        <button class="btn" id="copyAddressBtn" style="margin-top: 1rem; display: none;">
+          <i class="fa fa-copy"></i> Copy Address
+        </button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Developer Options</h2>
+      </div>
+      <div class="form-group">
+        <label for="networkSelect">Switch Network</label>
+        <select id="networkSelect">
+          <option value="coston2">Coston2 (Chain ID: 114)</option>
+          <option value="coston">Coston (Chain ID: 16)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="debugMode"> Enable Console Logging
+        </label>
+      </div>
+    </div>
+    <footer class="footer">
+      <p>&copy; 2024 FAsset Portfolio Viewer | Testnet Only</p>
+      <div class="social-links">
+        <a href="mailto:mirmohmmadluqman@gmail.com">
+          <i class="fa fa-envelope"></i> Email
+        </a>
+        <a href="https://twitter.com/mirmohmadluqman" target="_blank">
+          <i class="fa fa-twitter"></i> Twitter
+        </a>
+      </div>
+    </footer>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script type="module">
+    import { createPublicClient, http, defineChain, createWalletClient, custom, formatUnits, parseUnits } from 'https://esm.sh/viem';
+    const coston2 = defineChain({
+      id: 114,
+      name: 'Flare Testnet Coston2',
+      network: 'coston2',
+      nativeCurrency: { decimals: 18, name: 'Coston2 Flare', symbol: 'C2FLR' },
+      rpcUrls: { default: { http: ['https://coston2-api.flare.network/ext/C/rpc'] } },
+      blockExplorers: { default: { name: 'Coston2 Explorer', url: 'https://coston2-explorer.flare.network' } }
+    });
+    const coston = defineChain({
+      id: 16,
+      name: 'Flare Testnet Coston',
+      network: 'coston',
+      nativeCurrency: { decimals: 18, name: 'Coston Flare', symbol: 'CFLR' },
+      rpcUrls: { default: { http: ['https://coston-api.flare.network/ext/C/rpc'] } },
+      blockExplorers: { default: { name: 'Coston Explorer', url: 'https://coston-explorer.flare.network' } }
+    });
+    const erc20Abi = [
+      { constant: true, inputs: [{ name: '_owner', type: 'address' }], name: 'balanceOf', outputs: [{ name: 'balance', type: 'uint256' }], type: 'function' },
+      { constant: true, inputs: [], name: 'decimals', outputs: [{ name: '', type: 'uint8' }], type: 'function' },
+      { constant: true, inputs: [], name: 'symbol', outputs: [{ name: '', type: 'string' }], type: 'function' }
+    ];
+    const TOKENS = {
+      FXRP: '0x91Bfe6A68aB035DFebb6A770FFfB748C03C0E40B',
+      USDT0: '0xbF5dA15B18ACfB8C01937bFdeF2D4B810447B435'
+    };
+    let account = null;
+    let publicClient = createPublicClient({ chain: coston2, transport: http() });
+    let chart = null;
+    let qrcode = null;
+    let debugMode = false;
+    let currentChain = 'coston2';
+    const log = (...args) => debugMode && console.log('[Debug]', ...args);
+    function loadCustomTokens() {
+      const saved = localStorage.getItem('customTokens');
+      return saved ? JSON.parse(saved) : [];
+    }
+    function saveCustomTokens(tokens) {
+      localStorage.setItem('customTokens', JSON.stringify(tokens));
+    }
+    function loadTransactions() {
+      const saved = localStorage.getItem('transactions');
+      return saved ? JSON.parse(saved) : [];
+    }
+    function saveTransaction(tx) {
+      const txs = loadTransactions();
+      txs.unshift(tx);
+      if (txs.length > 20) txs.pop();
+      localStorage.setItem('transactions', JSON.stringify(txs));
+      renderTransactions();
+    }
+    function renderTransactions() {
+      const txs = loadTransactions();
+      const container = document.getElementById('txHistory');
+      if (txs.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 2rem;">No transactions yet</p>';
+        return;
+      }
+      container.innerHTML = txs.map(tx => `
+        <div class="transaction-item">
+          <div>
+            <strong>${tx.token}</strong><br>
+            <small style="color: var(--text-muted);">${new Date(tx.timestamp).toLocaleString()}</small>
+          </div>
+          <div style="text-align: right;">
+            <div>${tx.amount}</div>
+            <span class="tx-status tx-${tx.status}">${tx.status}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+    async function connectWallet() {
+      try {
+        if (!window.ethereum) {
+          alert('Please install MetaMask!');
+          return;
+        }
+        const chainId = currentChain === 'coston2' ? '0x72' : '0x10';
+        const explorerUrl = currentChain === 'coston2' ? 'https://coston2-explorer.flare.network' : 'https://coston-explorer.flare.network';
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId }]
+        });
+        const walletClient = createWalletClient({ transport: custom(window.ethereum) });
+        const accounts = await walletClient.request({ method: 'eth_requestAccounts' });
+        account = accounts[0];
+        document.getElementById('connectBtn').style.display = 'none';
+        document.getElementById('disconnectBtn').style.display = 'inline-flex';
+        document.getElementById('refreshBtn').style.display = 'inline-flex';
+        document.getElementById('walletAddress').style.display = 'block';
+        document.getElementById('addressText').textContent = `${account.slice(0, 6)}...${account.slice(-4)}`;
+        document.getElementById('explorerLink').href = `${explorerUrl}/address/${account}`;
+        document.getElementById('networkBadge').innerHTML = `<span class="network-badge">${currentChain.toUpperCase()}</span>`;
+        document.getElementById('copyAddressBtn').style.display = 'inline-flex';
+        if (qrcode) qrcode.clear();
+        qrcode = new QRCode(document.getElementById('qrcode'), {
+          text: account,
+          width: 200,
+          height: 200
+        });
+        log('Connected:', account);
+        await fetchBalances();
+      } catch (error) {
+        if (error.code === 4902) {
+          const chainConfig = currentChain === 'coston2' ? {
+            chainId: '0x72',
+            chainName: 'Flare Testnet Coston2',
+            rpcUrls: ['https://coston2-api.flare.network/ext/C/rpc'],
+            nativeCurrency: { name: 'C2FLR', symbol: 'C2FLR', decimals: 18 },
+            blockExplorerUrls: ['https://coston2-explorer.flare.network']
+          } : {
+            chainId: '0x10',
+            chainName: 'Flare Testnet Coston',
+            rpcUrls: ['https://coston-api.flare.network/ext/C/rpc'],
+            nativeCurrency: { name: 'CFLR', symbol: 'CFLR', decimals: 18 },
+            blockExplorerUrls: ['https://coston-explorer.flare.network']
+          };
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [chainConfig]
+          });
+          await connectWallet();
+        } else {
+          console.error('Connection error:', error);
+          alert('Failed to connect wallet');
+        }
+      }
+    }
+    function disconnectWallet() {
+      account = null;
+      document.getElementById('connectBtn').style.display = 'inline-flex';
+      document.getElementById('disconnectBtn').style.display = 'none';
+      document.getElementById('refreshBtn').style.display = 'none';
+      document.getElementById('walletAddress').style.display = 'none';
+      document.getElementById('networkBadge').innerHTML = '';
+      document.getElementById('copyAddressBtn').style.display = 'none';
+      document.getElementById('c2flrBalance').textContent = '0.0000';
+      document.getElementById('fxrpBalance').textContent = '0.0000';
+      document.getElementById('usdt0Balance').textContent = '0.0000';
+      document.getElementById('totalValue').textContent = '0.0000';
+      document.getElementById('totalUSD').textContent = '$0.00';
+      if (qrcode) qrcode.clear();
+      log('Disconnected');
+    }
+    async function fetchBalances() {
+      if (!account) return;
+      document.getElementById('loadingIndicator').style.display = 'block';
+      try {
+        const nativeBalance = await publicClient.getBalance({ address: account });
+        const nativeFormatted = parseFloat(formatUnits(nativeBalance, 18)).toFixed(4);
+        document.getElementById('c2flrBalance').textContent = nativeFormatted;
+        const fxrpDecimals = await publicClient.readContract({
+          address: TOKENS.FXRP,
+          abi: erc20Abi,
+          functionName: 'decimals'
+        });
+        const fxrpBalance = await publicClient.readContract({
+          address: TOKENS.FXRP,
+          abi: erc20Abi,
+          functionName: 'balanceOf',
+          args: [account]
+        });
+        const fxrpFormatted = parseFloat(formatUnits(fxrpBalance, fxrpDecimals)).toFixed(4);
+        document.getElementById('fxrpBalance').textContent = fxrpFormatted;
+        const usdt0Decimals = await publicClient.readContract({
+          address: TOKENS.USDT0,
+          abi: erc20Abi,
+          functionName: 'decimals'
+        });
+        const usdt0Balance = await publicClient.readContract({
+          address: TOKENS.USDT0,
+          abi: erc20Abi,
+          functionName: 'balanceOf',
+          args: [account]
+        });
+        const usdt0Formatted = parseFloat(formatUnits(usdt0Balance, usdt0Decimals)).toFixed(4);
+        document.getElementById('usdt0Balance').textContent = usdt0Formatted;
+        const customTokens = loadCustomTokens();
+        let customHtml = '';
+        for (const token of customTokens) {
+          try {
+            const decimals = await publicClient.readContract({
+              address: token.address,
+              abi: erc20Abi,
+              functionName: 'decimals'
+            });
+            const balance = await publicClient.readContract({
+              address: token.address,
+              abi: erc20Abi,
+              functionName: 'balanceOf',
+              args: [account]
+            });
+            const formatted = parseFloat(formatUnits(balance, decimals)).toFixed(4);
+            customHtml += `
+              <div class="balance-item">
+                <span class="balance-label">${token.symbol}</span>
+                <span class="balance-value">${formatted}</span>
+              </div>
+            `;
+          } catch (e) {
+            log('Error fetching custom token:', e);
+          }
+        }
+        document.getElementById('customTokens').innerHTML = customHtml;
+        const total = parseFloat(nativeFormatted) + parseFloat(fxrpFormatted) * 0.5 + parseFloat(usdt0Formatted);
+        document.getElementById('totalValue').textContent = total.toFixed(4);
+        document.getElementById('totalUSD').textContent = `$${(total * 0.05).toFixed(2)}`;
+        updateChart([
+          { label: 'Native', value: parseFloat(nativeFormatted) },
+          { label: 'FXRP', value: parseFloat(fxrpFormatted) },
+          { label: 'USDT0', value: parseFloat(usdt0Formatted) }
+        ]);
+        log('Balances fetched successfully');
+      } catch (error) {
+        console.error('Error fetching balances:', error);
+        alert('Error fetching balances. Check console.');
+      } finally {
+        document.getElementById('loadingIndicator').style.display = 'none';
+      }
+    }
+    function updateChart(data) {
+      const ctx = document.getElementById('portfolioChart').getContext('2d');
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: data.map(d => d.label),
+          datasets: [{
+            data: data.map(d => d.value),
+            backgroundColor: ['#e91e63', '#9c27b0', '#2196f3'],
+            borderWidth: 2,
+            borderColor: getComputedStyle(document.body).getPropertyValue('--bg-color')
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: getComputedStyle(document.body).getPropertyValue('--text-color') } },
+            tooltip: {
+              callbacks: {
+                label: ctx => `${ctx.label}: ${ctx.parsed.toFixed(4)}`
+              }
+            }
+          }
+        }
+      });
+    }
+    async function addCustomToken() {
+      const address = document.getElementById('tokenAddress').value.trim();
+      const symbol = document.getElementById('tokenSymbol').value.trim();
+      if (!address.match(/^0x[a-fA-F0-9]{40}$/)) {
+        alert('Invalid address format');
+        return;
+      }
+      if (!symbol) {
+        alert('Please enter a symbol');
+        return;
+      }
+      const tokens = loadCustomTokens();
+      if (tokens.find(t => t.address.toLowerCase() === address.toLowerCase())) {
+        alert('Token already added');
+        return;
+      }
+      tokens.push({ address, symbol });
+      saveCustomTokens(tokens);
+      document.getElementById('tokenAddress').value = '';
+      document.getElementById('tokenSymbol').value = '';
+      alert(`${symbol} added successfully!`);
+      if (account) await fetchBalances();
+    }
+    function toggleTheme() {
+      const current = document.body.getAttribute('data-theme');
+      const newTheme = current === 'dark' ? 'light' : 'dark';
+      document.body.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      const icon = newTheme === 'dark' ? 'fa fa-sun-o' : 'fa fa-moon-o';
+      const text = newTheme === 'dark' ? 'Light' : 'Dark';
+      document.getElementById('themeToggle').innerHTML = `<i class="${icon}"></i> ${text}`;
+      if (chart) {
+        updateChart([
+          { label: 'Native', value: parseFloat(document.getElementById('c2flrBalance').textContent) },
+          { label: 'FXRP', value: parseFloat(document.getElementById('fxrpBalance').textContent) },
+          { label: 'USDT0', value: parseFloat(document.getElementById('usdt0Balance').textContent) }
+        ]);
+      }
+    }
+    async function switchNetwork() {
+      const network = document.getElementById('networkSelect').value;
+      currentChain = network;
+      if (network === 'coston2') {
+        publicClient = createPublicClient({ chain: coston2, transport: http() });
+      } else {
+        publicClient = createPublicClient({ chain: coston, transport: http() });
+      }
+      if (account) {
+        const explorerUrl = network === 'coston2' ? 'https://coston2-explorer.flare.network' : 'https://coston-explorer.flare.network';
+        document.getElementById('explorerLink').href = `${explorerUrl}/address/${account}`;
+        document.getElementById('networkBadge').innerHTML = `<span class="network-badge">${network.toUpperCase()}</span>`;
+        await fetchBalances();
+      }
+    }
+    // Event listeners
+    document.getElementById('connectBtn').addEventListener('click', connectWallet);
+    document.getElementById('disconnectBtn').addEventListener('click', disconnectWallet);
+    document.getElementById('refreshBtn').addEventListener('click', fetchBalances);
+    document.getElementById('addTokenBtn').addEventListener('click', addCustomToken);
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+    document.getElementById('copyAddressBtn').addEventListener('click', () => {
+      if (account) {
+        navigator.clipboard.writeText(account).then(() => alert('Address copied!'));
+      }
+    });
+    document.getElementById('debugMode').addEventListener('change', (e) => { debugMode = e.target.checked; });
+    document.getElementById('networkSelect').addEventListener('change', switchNetwork);
+    // Initialize
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.body.setAttribute('data-theme', savedTheme);
+    const icon = savedTheme === 'dark' ? 'fa fa-sun-o' : 'fa fa-moon-o';
+    const text = savedTheme === 'dark' ? 'Light' : 'Dark';
+    document.getElementById('themeToggle').innerHTML = `<i class="${icon}"></i> ${text}`;
+    renderTransactions();
+  </script>
+</body>
+</html>

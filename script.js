@@ -1,15 +1,4 @@
-    // I had used this JS in index.html, there's no need to include it
-    //
-    //          /\
-    //         /  \
-    //        /    \
-    //       /      \
-    //      /        \
-    //     /          \
-    //    /            \
-
-
-    import { createWalletClient, custom, createPublicClient } from "https://esm.sh/viem";
+import { createWalletClient, custom, createPublicClient } from "https://esm.sh/viem";
 
     // Get DOM elements
     const connectButton = document.getElementById('connectButton');
@@ -69,3 +58,4 @@
     disconnectButton.onclick = disconnect;
     fundButton.onclick = fund;
     // buyCoffeeButton.onclick = buyMeACoffee;
+
